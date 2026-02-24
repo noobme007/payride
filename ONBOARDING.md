@@ -1,6 +1,6 @@
 # x402 Onboarding Guide
 
-A complete guide to integrating GoatX402 payments — covering **admin setup**, **developer integration**, and **end-to-end testing**.
+A complete guide to integrating GoatX402 payments — covering **admin setup**, **developer integration**, and **end-to-end testing**. Includes both Dashboard and CLI workflows.
 
 ---
 
@@ -32,24 +32,76 @@ A complete guide to integrating GoatX402 payments — covering **admin setup**, 
 
 ## 2. Admin: Merchant Setup
 
-These steps are performed in the **GoatX402 Admin Dashboard**.
+Admin setup can be done via the **Admin Dashboard** (web UI) or the **Admin API** (CLI/curl).
+
+### Prerequisites (CLI)
+
+```bash
+# Set these once for all admin commands
+export API_URL="https://x402-api-<instance>.testnet3.goat.network"
+export AUTH="Authorization: Bearer <admin-token>"
+```
 
 ### 2a. Create Merchant
 
-1. Go to the Admin Dashboard
-2. Create a new merchant (e.g., `Openclaw_001`)
-3. Generate API credentials:
-   - **Merchant ID** — unique identifier
-   - **API Key** — for HMAC authentication
-   - **API Secret** — for signing requests (server-side only!)
-4. Note the **API URL** (e.g., `https://x402-api-lx58aabp0r.testnet3.goat.network`)
+**Dashboard:** Go to Merchants → Create New Merchant
 
-### 2b. Configure Supported Chains & Tokens
+**CLI:**
+```bash
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants" -d '{
+  "merchant_id": "my_shop",
+  "name": "My Shop",
+  "receive_type": "DELEGATE",
+  "generate_api_keys": true
+}'
+```
 
-For each chain the merchant accepts payments on:
+Response (save these immediately!):
+```json
+{
+  "merchant_id": "my_shop",
+  "api_key": "gHfeB7Il...",
+  "api_secret": "rIeDeF0M...",
+  "success": true
+}
+```
 
-1. Add the chain (e.g., GOAT Testnet3, chain ID `48816`)
-2. Add supported tokens with their contract addresses:
+> ⚠️ **Save `api_key` and `api_secret` immediately.** The secret is only shown once. If lost, rotate keys with:
+> ```bash
+> curl -s -X POST -H "$AUTH" "$API_URL/admin/merchants/my_shop/rotate-keys"
+> ```
+
+**Receive types:**
+- `DIRECT` — user pays directly to merchant address
+- `DELEGATE` — user pays to TSS wallet, Core settles via EIP-3009 or Permit2
+
+### 2b. Add Merchant Token Addresses
+
+For each chain/token the merchant accepts, add a receiving address:
+
+**CLI:**
+```bash
+# Add USDT on GOAT Testnet3
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/my_shop/addresses" -d '{
+  "chain_id": 48816,
+  "token_contract": "0xdce0af57e8f2ce957b3838cd2a2f3f3677965dd3",
+  "symbol": "USDT",
+  "address": "0xYourMerchantWallet"
+}'
+
+# Add USDC on GOAT Testnet3
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/my_shop/addresses" -d '{
+  "chain_id": 48816,
+  "token_contract": "0x29d1ee93e9ecf6e50f309f498e40a6b42d352fa1",
+  "symbol": "USDC",
+  "address": "0xYourMerchantWallet"
+}'
+```
+
+**Available tokens (Testnet):**
 
 | Chain | Chain ID | Token | Contract |
 |---|---|---|---|
@@ -57,15 +109,44 @@ For each chain the merchant accepts payments on:
 | GOAT Testnet3 | 48816 | USDC | `0x29d1ee93e9ecf6e50f309f498e40a6b42d352fa1` |
 | BSC Testnet | 97 | USDT | `0x85181e18011d60ffebdf78fda202c2f5896eecae` |
 | BSC Testnet | 97 | USDC | `0xa4b9550a5835ba669edd759cf82e6ca2d5e2c0a2` |
+| Sepolia | 11155111 | USDT | `0xb7af9c6da7c7e7ec69d06466d326b9c2a2fbc0f8` |
+| Sepolia | 11155111 | USDC | `0xff6981ac8f983914a9ea8d27b13c07d8d62c4a3b` |
 
 ### 2c. Top Up Fee Balance
 
-- Order creation deducts a fee from the merchant's fee balance
-- Go to **Fees → Topup** and add funds for the merchant
-- If balance runs out, order creation fails with `insufficient fee balance`
-- **Recommendation:** Set up alerts to monitor fee balance
+Order creation deducts a fee (in USD) from the merchant's fee balance. **If the balance is zero, order creation will fail.**
 
-> ⚠️ This is a common blocker — if order creation returns `insufficient fee balance`, the admin needs to top up.
+**CLI:**
+```bash
+# Top up $100
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/fees/topup" -d '{
+  "merchant_id": "my_shop",
+  "amount_usd": 100,
+  "description": "Initial topup"
+}'
+
+# Check balance
+curl -s -H "$AUTH" "$API_URL/admin/fees/balance/my_shop"
+```
+
+> ⚠️ This is a common blocker — if order creation returns `insufficient fee balance`, top up here.
+
+### 2d. Verify Merchant Setup
+
+**CLI:**
+```bash
+# Full merchant details
+curl -s -H "$AUTH" "$API_URL/admin/merchants/my_shop" | jq .
+
+# Public merchant info (no auth needed)
+curl -s "$API_URL/merchants/my_shop" | jq .
+```
+
+At this point you should see:
+- ✅ Merchant enabled
+- ✅ Token addresses configured
+- ✅ Fee balance > 0
 
 ---
 
@@ -93,8 +174,8 @@ cd ../goatx402-demo
 Create `goatx402-demo/.env` with the credentials from the admin:
 
 ```bash
-GOATX402_MERCHANT_ID=your_merchant_id
-GOATX402_API_URL=https://x402-api-lx58aabp0r.testnet3.goat.network
+GOATX402_MERCHANT_ID=my_shop
+GOATX402_API_URL=https://x402-api-<instance>.testnet3.goat.network
 GOATX402_API_KEY=your_api_key
 GOATX402_API_SECRET=your_api_secret
 
@@ -113,17 +194,17 @@ pnpm dev:server
 curl http://localhost:3001/api/health
 # → {"status":"ok"}
 
-# Check merchant config
-curl http://localhost:3001/api/config
+# Check merchant config — should show your chains and tokens
+curl http://localhost:3001/api/config | jq .
 ```
 
-If `chains` is empty in the config response, the admin hasn't configured chains/tokens yet — go back to [Step 2b](#2b-configure-supported-chains--tokens).
+If `chains` is empty, go back to [Step 2b](#2b-add-merchant-token-addresses).
 
 ---
 
 ## 4. Developer: Callback Contract Deployment
 
-If your merchant uses the **DELEGATE flow** (`ERC20_APPROVE_XFER` or `ERC20_3009`), you need a callback contract on each chain.
+**Required for DELEGATE flow** (`ERC20_APPROVE_XFER` or `ERC20_3009`). Skip if using `DIRECT` flow.
 
 ### 4a. Install Foundry
 
@@ -132,7 +213,11 @@ curl -L https://foundry.paradigm.xyz | bash
 foundryup
 ```
 
-### 4b. Deploy the Contract
+### 4b. Get Native Tokens for Gas
+
+**GOAT Testnet3:** Use the [faucet](https://bridge.testnet3.goat.network/faucet) to get BTC for gas.
+
+### 4c. Deploy the Contract
 
 ```bash
 cd goatx402-contract
@@ -142,20 +227,20 @@ forge install
 
 # Deploy (Upgradeable Proxy pattern)
 forge script script/DeployMerchantCallback.s.sol:DeployMerchantCallback \
-  --rpc-url <RPC_URL> \
+  --rpc-url https://rpc.testnet3.goat.network \
   --broadcast \
   --private-key <DEPLOYER_PRIVATE_KEY> \
-  --gas-price <GAS_PRICE>
+  --priority-gas-price 130000 \
+  --gas-price 1000000
 ```
 
 > **GOAT Testnet3 notes:**
-> - RPC: `https://rpc.testnet3.goat.network`
-> - Minimum gas price tip: `130000` wei
-> - You need native tokens (BTC) for gas — use the [faucet](https://bridge.testnet3.goat.network/faucet)
+> - Minimum gas tip: `130000` wei (transactions will be rejected below this)
+> - Always set both `--priority-gas-price` and `--gas-price`
 
-### 4c. Note the Proxy Address
+### 4d. Note the Proxy Address
 
-After deployment, note the **Proxy contract address** from the deployment output. Example:
+From the deployment output:
 ```
 == Return ==
 proxy: address 0x3D62128a3b1601cbc015E8a98Eda9BA051319ed4
@@ -169,24 +254,29 @@ After the developer deploys the callback contract:
 
 ### 5a. Register Callback Contract
 
-In the Admin Dashboard, configure the callback contract for the merchant:
-- **Merchant ID:** `Openclaw_001`
-- **Chain ID:** `48816`
-- **Callback Contract Address:** `0x3D62128a...` (the proxy address from Step 4)
-- **EIP-712 Name:** (as configured in the contract)
-- **EIP-712 Version:** (as configured in the contract)
+**CLI:**
+```bash
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/my_shop/callback-contracts" -d '{
+  "chain_id": 48816,
+  "spent_address": "0x3D62128a3b1601cbc015E8a98Eda9BA051319ed4",
+  "eip712_name": "X402CallbackAdapter",
+  "eip712_version": "1"
+}'
+```
 
-### 5b. Add Authorized Caller
+### 5b. Verify Complete Setup
 
-Add the GoatX402 authorized caller (`x402d`) to the callback contract's allowlist.
+**CLI:**
+```bash
+curl -s -H "$AUTH" "$API_URL/admin/merchants/my_shop" | jq .
+```
 
-### 5c. Verify Everything
-
-At this point, the merchant should have:
-- [x] API credentials generated
-- [x] Chains and tokens configured
-- [x] Fee balance topped up
-- [x] Callback contract registered (if using DELEGATE flow)
+The merchant should now have:
+- [x] `enabled: true`
+- [x] `addresses` — token addresses per chain
+- [x] `callback_contracts` — callback contract per chain (DELEGATE only)
+- [x] Fee balance > 0
 
 ---
 
@@ -216,7 +306,8 @@ This starts:
 
 **User prerequisites:**
 - MetaMask or compatible EVM wallet
-- The target network added to MetaMask (GOAT Testnet3: chain ID `48816`, RPC `https://rpc.testnet3.goat.network`)
+- The target network added to MetaMask:
+  - **GOAT Testnet3:** Chain ID `48816`, RPC `https://rpc.testnet3.goat.network`
 - Sufficient token balance (e.g., USDT)
 - Small amount of native tokens for gas
 
@@ -283,119 +374,109 @@ CHECKOUT_VERIFIED → PAYMENT_CONFIRMED → INVOICED
 
 ## 9. Full Test Log (Real Example)
 
-Below is a complete, real test payment performed on **2026-02-23** on GOAT Testnet3.
+Two complete end-to-end tests performed on GOAT Testnet3.
 
-### Environment
+### Test 1: Openclaw_001 (2026-02-23)
+
+**Setup:** Merchant pre-configured by admin via Dashboard.
 
 | Item | Value |
 |---|---|
 | Merchant | `Openclaw_001` |
 | Chain | GOAT Testnet3 (`48816`) |
-| Token | USDT (`0xdce0af57e8f2ce957b3838cd2a2f3f3677965dd3`) |
+| Token | USDT (`0xdce0af57...`) |
 | Test Wallet | `0x2612567DFf7B6e03340d153F83a7Ca899c0b6299` |
 | Callback Contract | `0x3D62128a3b1601cbc015E8a98Eda9BA051319ed4` |
-| API URL | `https://x402-api-lx58aabp0r.testnet3.goat.network` |
 
-### Step 1 — Verify Wallet Balance
-
-```
-Native (BTC): 0.0000385 (enough for gas)
-USDT balance:  10.000000 (claimed from faucet)
-```
-
-### Step 2 — Health Check
+**Flow:**
 
 ```bash
+# 1. Health check
 $ curl http://localhost:3001/api/health
 {"status":"ok"}
-```
 
-### Step 3 — Load Merchant Config
-
-```bash
+# 2. Verify config — 3 chains, USDC+USDT each
 $ curl http://localhost:3001/api/config
-{
-  "merchantId": "Openclaw_001",
-  "merchantName": "Openclaw_001",
-  "chains": [
-    { "chainId": 97, "name": "BSC Testnet", "tokens": ["USDC", "USDT"] },
-    { "chainId": 48816, "name": "Goat Testnet", "tokens": ["USDC", "USDT"] },
-    { "chainId": 11155111, "name": "Sepolia", "tokens": ["USDC", "USDT"] }
-  ]
-}
-```
+{"merchantId":"Openclaw_001","chains":[...3 chains...]}
 
-### Step 4 — Create Order (1 USDT)
+# 3. Create order (1 USDT)
+$ curl -X POST http://localhost:3001/api/orders -H "Content-Type: application/json" \
+  -d '{"chainId":48816,"tokenSymbol":"USDT","tokenContract":"0xdce0af57e8f2ce957b3838cd2a2f3f3677965dd3","fromAddress":"0x2612567DFf7B6e03340d153F83a7Ca899c0b6299","amountWei":"1000000"}'
+{"orderId":"007a6713-d1f0-45b2-be6c-e1e45ee81564","flow":"ERC20_APPROVE_XFER","payToAddress":"0x8D5403Cd1deD2982c758594BEcb4571A5B864057"}
 
-```bash
-$ curl -X POST http://localhost:3001/api/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chainId": 48816,
-    "tokenSymbol": "USDT",
-    "tokenContract": "0xdce0af57e8f2ce957b3838cd2a2f3f3677965dd3",
-    "fromAddress": "0x2612567DFf7B6e03340d153F83a7Ca899c0b6299",
-    "amountWei": "1000000"
-  }'
-
-{
-  "orderId": "007a6713-d1f0-45b2-be6c-e1e45ee81564",
-  "flow": "ERC20_APPROVE_XFER",
-  "payToAddress": "0x8D5403Cd1deD2982c758594BEcb4571A5B864057",
-  "expiresAt": 1771831788
-}
-```
-
-### Step 5 — Send USDT to TSS Wallet
-
-```bash
+# 4. Send 1 USDT to TSS wallet
 $ cast send 0xdce0af57e8f2ce957b3838cd2a2f3f3677965dd3 \
-  "transfer(address,uint256)" \
-  0x8D5403Cd1deD2982c758594BEcb4571A5B864057 1000000 \
-  --private-key $PK \
-  --rpc-url https://rpc.testnet3.goat.network \
-  --gas-limit 100000 \
-  --priority-gas-price 130000 \
-  --gas-price 1000000
+  "transfer(address,uint256)" 0x8D5403Cd1deD2982c758594BEcb4571A5B864057 1000000 \
+  --private-key $PK --rpc-url https://rpc.testnet3.goat.network \
+  --gas-limit 100000 --priority-gas-price 130000 --gas-price 1000000
+# status: 1 (success)
+# transactionHash: 0x96395b112eece299cc5d91e5d0f58a53180a5aac709e20fbd18de4f9905b911a
 
-status:          1 (success)
-transactionHash: 0x96395b112eece299cc5d91e5d0f58a53180a5aac709e20fbd18de4f9905b911a
-blockNumber:     11501261
-gasUsed:         35024
+# 5. Poll status
+$ curl http://localhost:3001/api/orders/007a6713-d1f0-45b2-be6c-e1e45ee81564
+# Poll 1: {"status":"CHECKOUT_VERIFIED"}
+# Poll 2: {"status":"PAYMENT_CONFIRMED","txHash":"0x96395b11...","confirmedAt":"2026-02-23T07:10:05Z"}
 ```
 
+✅ **Result:** Payment confirmed in ~5 seconds.
 🔗 [View on Explorer](https://explorer.testnet3.goat.network/tx/0x96395b112eece299cc5d91e5d0f58a53180a5aac709e20fbd18de4f9905b911a)
 
-### Step 6 — Poll Order Status
+### Test 2: claw_demo (2026-02-24)
+
+**Setup:** Merchant created entirely via Admin CLI (no Dashboard needed).
 
 ```bash
-# Poll 1 (immediately after tx):
-$ curl http://localhost:3001/api/orders/007a6713-d1f0-45b2-be6c-e1e45ee81564
-{"status": "CHECKOUT_VERIFIED", ...}
+# Admin: Create merchant
+$ curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants" -d '{
+  "merchant_id":"claw_demo","name":"Claw Demo Shop","receive_type":"DELEGATE","generate_api_keys":true}'
+{"api_key":"gHfeB7Il...","api_secret":"rIeDeF0M...","success":true}
 
-# Poll 2 (~5 seconds later):
-$ curl http://localhost:3001/api/orders/007a6713-d1f0-45b2-be6c-e1e45ee81564
-{
-  "status": "PAYMENT_CONFIRMED",
-  "txHash": "0x96395b112eece299cc5d91e5d0f58a53180a5aac709e20fbd18de4f9905b911a",
-  "confirmedAt": "2026-02-23T07:10:05Z"
-}
+# Admin: Add USDT address
+$ curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/claw_demo/addresses" -d '{
+  "chain_id":48816,"token_contract":"0xdce0af57e8f2ce957b3838cd2a2f3f3677965dd3","symbol":"USDT","address":"0x2612567DFf7B6e03340d153F83a7Ca899c0b6299"}'
+{"success":true}
+
+# Admin: Add USDC address
+$ curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/claw_demo/addresses" -d '{
+  "chain_id":48816,"token_contract":"0x29d1ee93e9ecf6e50f309f498e40a6b42d352fa1","symbol":"USDC","address":"0x2612567DFf7B6e03340d153F83a7Ca899c0b6299"}'
+{"success":true}
+
+# Admin: Register callback contract
+$ curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/claw_demo/callback-contracts" -d '{
+  "chain_id":48816,"spent_address":"0x3D62128a3b1601cbc015E8a98Eda9BA051319ed4","eip712_name":"X402CallbackAdapter","eip712_version":"1"}'
+{"success":true}
+
+# Admin: Top up fee balance
+$ curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/fees/topup" -d '{"merchant_id":"claw_demo","amount_usd":100,"description":"Initial topup"}'
+{"new_balance":100,"success":true}
+
+# Admin: Verify
+$ curl -s -H "$AUTH" "$API_URL/admin/merchants/claw_demo" | jq .
+# → enabled: true, 2 addresses, 1 callback contract, fee balance: $100
+
+# Developer: Create order to verify
+$ curl -s -X POST http://localhost:3002/api/orders -H "Content-Type: application/json" \
+  -d '{"chainId":48816,"tokenSymbol":"USDT","tokenContract":"0xdce0af57e8f2ce957b3838cd2a2f3f3677965dd3","fromAddress":"0x2612567DFf7B6e03340d153F83a7Ca899c0b6299","amountWei":"1000000"}'
+{"orderId":"63c0d5e8-c33d-4d64-b4d4-c85051245f94","flow":"ERC20_APPROVE_XFER","payToAddress":"0x8D5403Cd1deD2982c758594BEcb4571A5B864057"}
 ```
 
-### Result: ✅ Payment Confirmed
-
-The full flow — from order creation to on-chain payment to confirmation — completed in under 10 seconds.
+✅ **Result:** Full merchant setup + order creation via CLI only — no Dashboard needed.
 
 ---
 
 ## 10. Go-Live Checklist
 
 ### Admin
-- [ ] Merchant created with API credentials
-- [ ] All target chains and tokens configured
-- [ ] Fee balance topped up and monitoring in place
-- [ ] Callback contract registered (if DELEGATE flow)
-- [ ] Authorized caller added to callback contract
+- [ ] Merchant created with API credentials (`generate_api_keys: true`)
+- [ ] Token addresses added for all target chains
+- [ ] Fee balance topped up (`admin/fees/topup`)
+- [ ] Callback contract registered (if using DELEGATE flow)
+- [ ] Fee balance monitoring/alerts in place
 
 ### Developer
 - [ ] `API_SECRET` stored server-side only, never in frontend
@@ -418,31 +499,74 @@ The full flow — from order creation to on-chain payment to confirmation — co
 
 ### Admin Issues
 
-| Error | Cause | Fix |
+| Error | Cause | Fix (CLI) |
 |---|---|---|
-| `merchant not found` | Merchant not created | Create merchant in Admin Dashboard |
-| `insufficient fee balance` | Fee balance is 0 | Top up in Fees → Topup |
-| `token not supported on chain` | Chain/token not configured | Add chain+token in Admin Dashboard |
-| `callback contract not configured` | Missing callback contract | Register the deployed contract address |
+| `merchant not found` | Merchant not created | `POST /admin/merchants` |
+| `insufficient fee balance` | Fee balance is 0 | `POST /admin/fees/topup` |
+| `token not supported on chain` | No address for this chain/token | `POST /admin/merchants/{id}/addresses` |
+| `callback contract not configured` | Missing callback contract | `POST /admin/merchants/{id}/callback-contracts` |
+| Need to check merchant status | — | `GET /admin/merchants/{id}` |
+| Need to check fee balance | — | `GET /admin/fees/balance/{id}` |
 
 ### Developer Issues
 
 | Error | Cause | Fix |
 |---|---|---|
-| `Invalid API Key` (401) | Wrong credentials | Verify `API_KEY` and `API_SECRET` match what admin generated |
-| `HMAC signature invalid` (401) | Timestamp drift or SDK mismatch | Ensure server clock is synced (NTP); update SDK version |
-| Server exits silently | Unhandled exception in Express | Add `process.on('uncaughtException')` handler; check logs |
-| Order stays `CHECKOUT_VERIFIED` | Payment not detected | Verify exact `amountWei` sent to correct `payToAddress` |
-| `gas required exceeds allowance` | Insufficient native balance for gas | Get native tokens from faucet |
-| `gas tip cap below minimum` | Gas price too low | Set `--priority-gas-price 130000` (GOAT Testnet3 minimum) |
+| `Invalid API Key` (401) | Wrong credentials | Verify `API_KEY`/`API_SECRET`; rotate if needed |
+| `HMAC signature invalid` (401) | Timestamp drift or SDK mismatch | Sync server clock (NTP); update SDK |
+| Empty `chains` in config | No addresses configured | Admin: add addresses per chain/token |
+| Server exits silently | Unhandled exception | Add `process.on('uncaughtException')` handler |
+| Order stays `CHECKOUT_VERIFIED` | Payment not detected | Verify exact `amountWei` to correct `payToAddress` |
+| `gas required exceeds allowance` | Insufficient native balance | Get tokens from [faucet](https://bridge.testnet3.goat.network/faucet) |
+| `gas tip cap below minimum` | Gas price too low | Set `--priority-gas-price 130000` (GOAT Testnet3) |
 
 ### User Issues
 
 | Issue | Fix |
 |---|---|
-| MetaMask shows wrong network | Add GOAT Testnet3: chain `48816`, RPC `https://rpc.testnet3.goat.network` |
+| MetaMask wrong network | Add GOAT Testnet3: chain `48816`, RPC `https://rpc.testnet3.goat.network` |
 | "Insufficient funds" | Get test tokens from faucet or GoatX402 team |
 | Transaction pending forever | Increase gas price; check network status |
+
+---
+
+## Admin CLI Quick Reference
+
+```bash
+# Setup
+export API_URL="https://x402-api-<instance>.testnet3.goat.network"
+export AUTH="Authorization: Bearer <admin-token>"
+
+# Merchant CRUD
+curl -s -H "$AUTH" "$API_URL/admin/merchants"                              # List
+curl -s -H "$AUTH" "$API_URL/admin/merchants/my_shop"                      # Get
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants" -d '{...}'                                     # Create
+curl -s -X PUT -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/my_shop" -d '{...}'                             # Update
+
+# Merchant addresses
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/my_shop/addresses" -d '{...}'                   # Add
+curl -s -X DELETE -H "$AUTH" \
+  "$API_URL/admin/merchants/my_shop/addresses/48816/USDT"                   # Remove
+
+# Callback contracts
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/merchants/my_shop/callback-contracts" -d '{...}'          # Add
+curl -s -X DELETE -H "$AUTH" \
+  "$API_URL/admin/merchants/my_shop/callback-contracts/48816"               # Remove
+
+# Fees
+curl -s -H "$AUTH" "$API_URL/admin/fees/balance/my_shop"                   # Check
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  "$API_URL/admin/fees/topup" -d '{"merchant_id":"my_shop","amount_usd":100}' # Topup
+
+# System
+curl -s -H "$AUTH" "$API_URL/admin/health"                                 # Health
+curl -s -H "$AUTH" "$API_URL/admin/stats"                                  # Stats
+curl -s -H "$AUTH" "$API_URL/admin/orders?merchant_id=my_shop"             # Orders
+```
 
 ---
 
@@ -450,10 +574,11 @@ The full flow — from order creation to on-chain payment to confirmation — co
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        ADMIN DASHBOARD                          │
-│  • Create merchant         • Configure chains/tokens            │
-│  • Generate API keys       • Register callback contracts        │
-│  • Top up fee balance      • Monitor orders                     │
+│                    ADMIN (Dashboard / CLI)                       │
+│                                                                  │
+│  1. Create merchant         4. Register callback contract        │
+│  2. Add token addresses     5. Top up fee balance                │
+│  3. Generate API keys       6. Monitor orders & fees             │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ configures
                                ▼
