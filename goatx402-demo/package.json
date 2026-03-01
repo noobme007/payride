@@ -13,8 +13,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "goatx402-sdk": "file:../goatx402-sdk",
-    "goatx402-sdk-server": "file:../goatx402-sdk-server-ts",
+    "goatx402-sdk": "^0.1.0",
+    "goatx402-sdk-server": "^0.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "ethers": "^6.9.0",
