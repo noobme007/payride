@@ -103,8 +103,7 @@ function App() {
     if (!wallet.isConnected || !wallet.address) return
     setAgentStatus('Booking…')
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || ''
-      const res = await fetch(`${apiUrl}/api/book`, {
+      const res = await fetch('/api/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -159,8 +158,7 @@ function App() {
     setAgentPicking(true)
     setAgentStatus('Agent choosing…')
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || ''
-      const res = await fetch(`${apiUrl}/api/agent`, {
+      const res = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userRequest, options }),
