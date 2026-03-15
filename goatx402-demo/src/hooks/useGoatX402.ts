@@ -9,7 +9,6 @@ import { useState, useCallback, useMemo } from 'react'
 import { ethers } from 'ethers'
 import { PaymentHelper, formatUnits } from 'goatx402-sdk'
 import type { Order, PaymentResult } from 'goatx402-sdk'
-import { config } from '../config'
 
 // Order response from backend
 interface OrderResponse {
@@ -93,7 +92,7 @@ export function useGoatX402(signer: ethers.Signer | null) {
       amountWei: string
       callbackCalldata?: string
     }): Promise<OrderResponse> => {
-      const response = await fetch(`${config.apiUrl}/orders`, {
+      const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -111,7 +110,7 @@ export function useGoatX402(signer: ethers.Signer | null) {
 
   // Get order status from backend
   const getOrderStatus = useCallback(async (orderId: string): Promise<OrderProof> => {
-    const response = await fetch(`${config.apiUrl}/orders/${orderId}`)
+    const response = await fetch(`/api/orders/${orderId}`)
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
@@ -123,7 +122,7 @@ export function useGoatX402(signer: ethers.Signer | null) {
 
   // Submit calldata signature via backend
   const submitSignature = useCallback(async (orderId: string, signature: string): Promise<void> => {
-    const response = await fetch(`${config.apiUrl}/orders/${orderId}/signature`, {
+    const response = await fetch(`/api/orders/${orderId}/signature`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ signature }),
