@@ -39,6 +39,7 @@ function App() {
   const wallet    = useWallet()
   const goatx402  = useGoatX402(wallet.signer)
 
+  const [isLaunched,  setIsLaunched]  = useState(false)
   const [mode, setMode] = useState<AppMode>('transport')
 
   // Search state
@@ -186,7 +187,7 @@ function App() {
     setUserRequest('')
   }
 
-  /* ── Latest confirmed record (for overlay) ────────────────── */
+  /* ── Final bits ───────────────────────────────────────────── */
   const lastPayment = payments[payments.length - 1] ?? null
   const showOverlay =
     goatx402.orderStatus &&
@@ -194,14 +195,64 @@ function App() {
     goatx402.paymentResult?.success &&
     lastPayment
 
-  /* ── Top bar wallet display ───────────────────────────────── */
   const fmtAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
+
+  if (!isLaunched) {
+    return (
+      <div className="landing-page">
+        <div className="bg-animate" />
+        
+        <header style={{ position: 'absolute', top: 0, width: '100%', padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="topbar-logo" style={{ color: '#fff' }}>
+             <span style={{ fontSize: '1.8rem', animation: 'float 3s ease-in-out infinite', display: 'inline-block' }}>✈️</span>
+             <span>PAYRIDE</span>
+          </div>
+          <button className="btn-launch" style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }} onClick={() => setIsLaunched(true)}>
+            Dashboard
+          </button>
+        </header>
+
+        <div className="hero-tag animate-pop">✨ World's 1st Autonomous AI Agent</div>
+        <h1 className="hero-title animate-slide-up">
+          Travel Smarter.<br />Let AI Book it.
+        </h1>
+        <p className="hero-sub animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          The first travel agent that doesn't just search—it signs transactions, handles payments, and confirms bookings autonomously on the GOAT Network.
+        </p>
+
+        <div className="hero-btns animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <button className="btn-launch" onClick={() => setIsLaunched(true)}>
+            Launch Payride App →
+          </button>
+        </div>
+
+        <div className="feat-grid animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          <div className="feat-card">
+            <div className="feat-icon">🤖</div>
+            <h3 className="feat-h">AI-Led Booking</h3>
+            <p className="feat-p">Our agent analyzes thousands of routes, picks the best, and executes the swap & payment via x402.</p>
+          </div>
+          <div className="feat-card">
+            <div className="feat-icon">🛡️</div>
+            <h3 className="feat-h">Secure & On-Chain</h3>
+            <p className="feat-p">Non-custodial. You sign the permission, the agent does the work. Powered by GOAT Testnet.</p>
+          </div>
+          <div className="feat-card">
+            <div className="feat-icon">🚆</div>
+            <h3 className="feat-h">Indian Local Data</h3>
+            <p className="feat-p">Complete coverage of Indian Railways, local buses, and seasonal flight paths in one dashboard.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="dashboard">
+      <div className="bg-animate" style={{ opacity: 0.15 }} />
       {/* ── TOP BAR ─────────────────────────────────────────── */}
       <header className="topbar">
-        <div className="topbar-logo">
+        <div className="topbar-logo" onClick={() => setIsLaunched(false)} style={{ cursor: 'pointer' }}>
           <span style={{ fontSize: '1.8rem', animation: 'float 3s ease-in-out infinite', display: 'inline-block' }}>✈️</span>
           <span>PAYRIDE</span>
         </div>

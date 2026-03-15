@@ -10,19 +10,44 @@
 
 /* ── Design tokens ───────────────────────────────────────────────── */
 :root {
-  --bg:      #F8FAFC;
+  --bg:      #0F172A; /* Support dark mode landing */
   --surface: #FFFFFF;
-  --primary: #0F172A; /* Deeper navy */
+  --primary: #0F172A;
   --accent:  #FF6B35;
   --accent-light: #FF9F7C;
-  --accent2: #0EA5E9; /* Richer cyan */
-  --accent3: #10B981; /* Vibrant emerald */
+  --accent2: #0EA5E9;
+  --accent3: #10B981;
   --border:  #E2E8F0;
   --text:    #1E293B;
   --muted:   #64748B;
-  --shadow:  4px 4px 0px #0F172A;
-  --shadow-hover: 2px 2px 0px #0F172A;
-  --radius:  12px;
+  --shadow:  6px 6px 0px #0F172A;
+  --shadow-hover: 3px 3px 0px #0F172A;
+  --radius:  16px;
+  --glass:   rgba(255, 255, 255, 0.8);
+}
+
+/* ── Mesh Background ─────────────────────────────────────────────── */
+.bg-animate {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: #0f172a;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(210,100%,16%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, hsla(199,98%,14%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(222,47%,11%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 50%, hsla(215,25%,27%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 50%, hsla(217,33%,17%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 100%, hsla(220,54%,15%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 100%, hsla(343,100%,10%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 100%, hsla(22,100%,10%,1) 0, transparent 50%);
+  filter: blur(100px);
+  animation: mesh-flow 20s ease infinite;
+}
+
+@keyframes mesh-flow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 /* ── Global Animations ───────────────────────────────────────────── */
@@ -81,8 +106,9 @@ a { color: inherit; text-decoration: none; }
 .topbar {
   height: 72px;
   flex-shrink: 0;
-  background: var(--surface);
-  border-bottom: 3px solid var(--primary);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 2px solid var(--primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -195,13 +221,121 @@ a { color: inherit; text-decoration: none; }
   scrollbar-color: var(--border) transparent;
 }
 
+/* ── Landing Page ────────────────────────────────────────────────── */
+.landing-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow-y: auto;
+  color: #fff;
+  text-align: center;
+}
+
+.hero-tag {
+  background: rgba(255,255,255,0.1);
+  padding: 0.5rem 1.25rem;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.2);
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.hero-title {
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(to bottom right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-sub {
+  font-size: 1.25rem;
+  color: #94a3b8;
+  max-width: 600px;
+  margin-bottom: 3rem;
+  line-height: 1.6;
+}
+
+.hero-btns {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+.btn-launch {
+  background: #fff;
+  color: var(--primary);
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border-radius: 12px;
+  box-shadow: 0 10px 20px -5px rgba(255, 107, 53, 0.3);
+}
+
+.btn-launch:hover {
+  transform: translateY(-4px);
+  background: var(--accent);
+  color: #fff;
+}
+
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 2rem;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.feat-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 20px;
+  text-align: left;
+  transition: all 0.3s ease;
+}
+
+.feat-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-5px);
+}
+
+.feat-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.feat-h {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.feat-p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
 /* ── Right panel ─────────────────────────────────────────────────── */
 .right-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--surface); /* Changed to white for dashboard pop */
   animation: slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
