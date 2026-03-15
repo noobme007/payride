@@ -47,6 +47,7 @@ function App() {
   const [agentPicking, setAgentPicking] = useState(false)
   const [userRequest,  setUserRequest]  = useState('')
   const [lastParams,   setLastParams]   = useState<SearchParams | null>(null)
+  const [searchError,  setSearchError]  = useState<string | null>(null)
 
   // Agent / payment state
   const [agentStatus,  setAgentStatus]  = useState('Idle')
@@ -70,22 +71,13 @@ function App() {
     setLastParams(params)
     setOptions([])
     setSearching(true)
+    setSearchError(null)
     setAgentStatus('Searching…')
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || ''
-      const res = await fetch(`${apiUrl}/api/search`, {
+      const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from:        params.from,
-          to:          params.to,
-          destination: params.destination,
-          startDate:   params.startDate,
-          endDate:     params.endDate,
-          budget:      params.budget,
-          tripMode:    params.tripMode,
-          tripType:    params.tripType,
-        }),
+        body: JSON.stringify(params),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
@@ -99,6 +91,7 @@ function App() {
       setAgentStatus('Idle')
     } catch (e) {
       setAgentStatus('Error')
+      setSearchError(e instanceof Error ? e.message : 'Search failed')
       console.error(e)
     } finally {
       setSearching(false)
