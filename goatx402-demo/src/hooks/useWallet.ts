@@ -22,6 +22,7 @@ export interface WalletState {
   chainId: number | null
   signer: ethers.Signer | null
   provider: ethers.BrowserProvider | null
+  balance: string | null
 }
 
 export function useWallet() {
@@ -31,6 +32,7 @@ export function useWallet() {
     chainId: null,
     signer: null,
     provider: null,
+    balance: null,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,12 +58,15 @@ export function useWallet() {
       const network = await provider.getNetwork()
       const chainId = Number(network.chainId)
 
+      const balance = ethers.formatEther(await provider.getBalance(address))
+
       setState({
         isConnected: true,
         address,
         chainId,
         signer,
         provider,
+        balance,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect wallet')
@@ -78,6 +83,7 @@ export function useWallet() {
       chainId: null,
       signer: null,
       provider: null,
+      balance: null,
     })
   }, [])
 
@@ -114,11 +120,13 @@ export function useWallet() {
       } else if (state.isConnected) {
         const provider = new ethers.BrowserProvider(window.ethereum!)
         const signer = await provider.getSigner()
+        const balance = ethers.formatEther(await provider.getBalance(accountsArr[0]))
         setState((prev) => ({
           ...prev,
           address: accountsArr[0],
           signer,
           provider,
+          balance,
         }))
       }
     }
@@ -128,11 +136,13 @@ export function useWallet() {
       if (state.isConnected && window.ethereum) {
         const provider = new ethers.BrowserProvider(window.ethereum)
         const signer = await provider.getSigner()
+        const balance = ethers.formatEther(await provider.getBalance(await signer.getAddress()))
         setState((prev) => ({
           ...prev,
           chainId,
           signer,
           provider,
+          balance,
         }))
       }
     }

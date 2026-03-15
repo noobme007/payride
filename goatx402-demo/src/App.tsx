@@ -201,46 +201,43 @@ function App() {
     return (
       <div className="landing-page">
         <div className="bg-animate" />
-        
-        <header style={{ position: 'absolute', top: 0, width: '100%', padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="topbar-logo" style={{ color: '#fff' }}>
-             <span style={{ fontSize: '1.8rem', animation: 'float 3s ease-in-out infinite', display: 'inline-block' }}>✈️</span>
-             <span>PAYRIDE</span>
-          </div>
-          <button className="btn-launch" style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }} onClick={() => setIsLaunched(true)}>
-            Dashboard
-          </button>
-        </header>
-
-        <div className="hero-tag animate-pop">✨ World's 1st Autonomous AI Agent</div>
-        <h1 className="hero-title animate-slide-up">
-          Travel Smarter.<br />Let AI Book it.
-        </h1>
-        <p className="hero-sub animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          The first travel agent that doesn't just search—it signs transactions, handles payments, and confirms bookings autonomously on the GOAT Network.
-        </p>
-
-        <div className="hero-btns animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          <button className="btn-launch" onClick={() => setIsLaunched(true)}>
-            Launch Payride App →
-          </button>
+        <div className="floating-icons">
+          <span className="float-icon" style={{ top: '10%', left: '10%' }}>✈️</span>
+          <span className="float-icon" style={{ top: '20%', right: '15%', animationDelay: '2s' }}>🚆</span>
+          <span className="float-icon" style={{ bottom: '15%', left: '20%', animationDelay: '4s' }}>🏖️</span>
+          <span className="float-icon" style={{ bottom: '10%', right: '25%', animationDelay: '1s' }}>🚕</span>
+          <span className="float-icon" style={{ top: '50%', left: '5%', animationDelay: '3s' }}>🏨</span>
         </div>
 
-        <div className="feat-grid animate-slide-up" style={{ animationDelay: '0.3s' }}>
-          <div className="feat-card">
-            <div className="feat-icon">🤖</div>
-            <h3 className="feat-h">AI-Led Booking</h3>
-            <p className="feat-p">Our agent analyzes thousands of routes, picks the best, and executes the swap & payment via x402.</p>
+        <div className="landing-card animate-pop">
+          <div className="hero-tag">✨ AUTONOMOUS AGENT</div>
+          <h1 className="hero-title">
+            PAYRIDE
+          </h1>
+          <div className="hero-sub">
+            The World's first Travel Agent that handles your <strong>Money, Signing, and Booking</strong> autonomously on GOAT Network.
           </div>
-          <div className="feat-card">
-            <div className="feat-icon">🛡️</div>
-            <h3 className="feat-h">Secure & On-Chain</h3>
-            <p className="feat-p">Non-custodial. You sign the permission, the agent does the work. Powered by GOAT Testnet.</p>
-          </div>
-          <div className="feat-card">
-            <div className="feat-icon">🚆</div>
-            <h3 className="feat-h">Indian Local Data</h3>
-            <p className="feat-p">Complete coverage of Indian Railways, local buses, and seasonal flight paths in one dashboard.</p>
+
+          <button className="btn-launch" onClick={() => setIsLaunched(true)}>
+            ENTER DASHBOARD →
+          </button>
+
+          <div className="feat-grid">
+            <div className="feat-card">
+              <div className="feat-icon">🤖</div>
+              <h3 className="feat-h">AI Book</h3>
+              <p className="feat-p">Agent signs & pays for you via x402.</p>
+            </div>
+            <div className="feat-card">
+              <div className="feat-icon">⚡</div>
+              <h3 className="feat-h">Instant</h3>
+              <p className="feat-p">From search to ticket in 2 minutes.</p>
+            </div>
+            <div className="feat-card">
+              <div className="feat-icon">🚆</div>
+              <h3 className="feat-h">Local</h3>
+              <p className="feat-p">Indian Railways & Local Bus data included.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -249,12 +246,11 @@ function App() {
 
   return (
     <div className="dashboard">
-      <div className="bg-animate" style={{ opacity: 0.15 }} />
-      {/* ── TOP BAR ─────────────────────────────────────────── */}
+      <div className="bg-animate" style={{ opacity: 0.1 }} />
+      {/* ── TOP BAR (Neobrutalist) ─────────────────────────── */}
       <header className="topbar">
         <div className="topbar-logo" onClick={() => setIsLaunched(false)} style={{ cursor: 'pointer' }}>
-          <span style={{ fontSize: '1.8rem', animation: 'float 3s ease-in-out infinite', display: 'inline-block' }}>✈️</span>
-          <span>PAYRIDE</span>
+          PAYRIDE
         </div>
 
         <div className="topbar-modes">
@@ -262,67 +258,48 @@ function App() {
             className={`mode-btn ${mode === 'vacation' ? 'mode-btn-active vacation' : ''}`}
             onClick={() => { setMode('vacation'); setOptions([]) }}
           >
-            🏖️ Vacation
+            🏖️ VACATION
           </button>
           <button
             className={`mode-btn ${mode === 'transport' ? 'mode-btn-active transport' : ''}`}
             onClick={() => { setMode('transport'); setOptions([]) }}
           >
-            🚆 Transport
+            🚆 TRANSPORT
           </button>
         </div>
 
         <div className="topbar-wallet">
-          {wallet.isConnected && wallet.address ? (
-            <div className="wallet-pill connected animate-pop">
-              <span className="wallet-dot" />
-              {fmtAddr(wallet.address)}
-              <button className="wallet-disc" onClick={wallet.disconnect}>×</button>
-            </div>
-          ) : (
-            <button
-              className="wallet-pill disconnected animate-pop"
-              onClick={wallet.connect}
-              disabled={wallet.loading}
-            >
-              {wallet.loading ? 'Connecting…' : '🦊 Connect Wallet'}
+          {!wallet.isConnected ? (
+            <button className="wallet-pill disconnected" onClick={wallet.connect} disabled={wallet.loading}>
+              {wallet.loading ? 'CONNECTING...' : 'CONNECT WALLET'}
             </button>
-          )}
-          {wallet.chainId && wallet.chainId !== GOAT_CHAIN_ID && wallet.isConnected && (
-            <span className="wrong-chain">Wrong network</span>
+          ) : (
+            <div className="wallet-pill connected">
+              {fmtAddr(wallet.address || '')}
+              <button onClick={wallet.disconnect} style={{marginLeft:'10px', background:'none', border:'none', cursor:'pointer', fontWeight:900, fontSize:'1.2rem'}}>×</button>
+            </div>
           )}
         </div>
       </header>
 
-      {/* ── MAIN AREA ───────────────────────────────────────── */}
+      {/* ── MAIN AREA (3 Panel neobrutalist split) ─────────── */}
       <main className="main-area">
-        {/* Left panel — form */}
+        {/* Panel 1: Form (Fixed Width) */}
         <aside className="left-panel">
-          <div className="panel-title">
-            {mode === 'vacation' ? '🏖️ Plan Your Vacation' : '🚆 Find Your Route'}
+          <div className="panel-title" style={{ background: '#0F172A', color: '#fff' }}>
+            {mode === 'vacation' ? '🏝️ VACATION PLAN' : '🎫 BOOKING FORM'}
           </div>
           <div className="form-scroll">
             {mode === 'vacation' ? (
-              <VacationForm
-                onSearch={search}
-                searching={searching}
-                isConnected={wallet.isConnected}
-              />
+              <VacationForm onSearch={search} searching={searching} isConnected={wallet.isConnected} />
             ) : (
-              <TransportForm
-                onSearch={search}
-                searching={searching}
-                isConnected={wallet.isConnected}
-              />
+              <TransportForm onSearch={search} searching={searching} isConnected={wallet.isConnected} />
             )}
           </div>
         </aside>
 
-        {/* Divider */}
-        <div className="panel-divider" />
-
-        {/* Right panel — results */}
-        <section className="right-panel">
+        {/* Panel 2: Results (Flexible Center) */}
+        <section className="center-panel">
           <ResultsPanel
             options={options}
             searching={searching}
@@ -335,18 +312,40 @@ function App() {
             error={searchError || goatx402.error}
           />
         </section>
+
+        {/* Panel 3: Status & History (Fixed Width) */}
+        <aside className="status-panel">
+          <div className="panel-title" style={{ borderBottom: '4px solid #0F172A', marginBottom: '1.5rem', background: '#FFD93D' }}>
+            🛰️ NETWORK
+          </div>
+          
+          <div style={{ background: '#FFF', border: '4px solid var(--primary)', padding: '1.25rem', marginBottom: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#64748B', textTransform: 'uppercase' }}>Available Balance</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>{wallet.balance ? parseFloat(wallet.balance).toFixed(4) : '0.000'} ETH</div>
+          </div>
+
+          <div style={{ flex: 1, background: '#FFF', border: '4px solid var(--primary)', padding: '1.25rem', boxShadow: 'var(--shadow-sm)', overflowY: 'auto' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 900, marginBottom: '0.75rem', borderBottom: '3px solid #F0F2F5', paddingBottom: '0.5rem' }}>ACTIVITY LOG</div>
+            {payments.length === 0 ? (
+              <div style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', marginTop: '3rem', fontWeight: 700 }}>No transactions yet</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {payments.map((p, idx) => (
+                  <div key={idx} style={{ padding: '0.75rem', border: '2px solid #0F172A', background: '#F8FAFC' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.txHash}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#10B981' }}>SUCCESS</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>{p.amount} USDT</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
       </main>
 
-      {/* ── BOTTOM BAR ──────────────────────────────────────── */}
-      <BottomBar
-        agentStatus={agentStatus}
-        payments={payments}
-        totalSpent={totalSpent}
-        isConnected={wallet.isConnected}
-        chainId={wallet.chainId}
-      />
-
-      {/* ── BOOKING OVERLAY ─────────────────────────────────── */}
+      {/* ── OVERLAY & FOOTER ────────────────────────────────── */}
       {showOverlay && lastPayment && (
         <BookingOverlay
           record={lastPayment}
@@ -359,6 +358,14 @@ function App() {
           onClose={handleReset}
         />
       )}
+
+      <BottomBar
+        agentStatus={agentStatus}
+        payments={payments}
+        totalSpent={totalSpent}
+        isConnected={wallet.isConnected}
+        chainId={wallet.chainId}
+      />
     </div>
   )
 }
