@@ -1,5 +1,5 @@
 /**
- * Wallet Connection Component
+ * ConnectWallet — compact pill bar in the app header area
  */
 
 interface ConnectWalletProps {
@@ -21,44 +21,36 @@ export function ConnectWallet({
   onConnect,
   onDisconnect,
 }: ConnectWalletProps) {
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-  }
+  const fmt = (addr: string) => `${addr.slice(0, 6)}…${addr.slice(-4)}`
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800">Wallet</h2>
-          {isConnected && address && (
-            <div className="mt-1">
-              <p className="text-sm text-gray-600 font-mono">{formatAddress(address)}</p>
-              <p className="text-xs text-gray-500">Chain ID: {chainId}</p>
-            </div>
-          )}
-        </div>
+    <div className="glass-card wallet-card">
+      <div>
+        <p className="wallet-label">Wallet</p>
+        {isConnected && address ? (
+          <>
+            <p className="wallet-addr">{fmt(address)}</p>
+            <p className="wallet-chain">Chain {chainId}</p>
+          </>
+        ) : (
+          <p className="wallet-chain">Not connected</p>
+        )}
+      </div>
 
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {isConnected && <span className="wallet-status-dot" />}
         {isConnected ? (
-          <button
-            onClick={onDisconnect}
-            className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
-          >
+          <button className="btn-disconnect" onClick={onDisconnect}>
             Disconnect
           </button>
         ) : (
-          <button
-            onClick={onConnect}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {loading ? 'Connecting...' : 'Connect MetaMask'}
+          <button className="btn-connect" onClick={onConnect} disabled={loading}>
+            {loading ? 'Connecting…' : '🦊 Connect MetaMask'}
           </button>
         )}
       </div>
 
-      {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="wallet-error">{error}</p>}
     </div>
   )
 }

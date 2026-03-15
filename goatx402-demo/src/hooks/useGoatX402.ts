@@ -5,14 +5,6 @@
  * and uses the frontend SDK for wallet interactions.
  */
 
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
-    }
-  }
-}
-
 import { useState, useCallback, useMemo } from 'react'
 import { ethers } from 'ethers'
 import { PaymentHelper, formatUnits } from 'goatx402-sdk'
@@ -147,7 +139,7 @@ export function useGoatX402(signer: ethers.Signer | null) {
   const pollForConfirmation = useCallback(
     async (orderId: string) => {
       const startTime = Date.now()
-      const timeout = 2 * 60 * 1000 // 2 minutes
+      const timeout = 5 * 60 * 1000 // 5 minutes
 
       while (Date.now() - startTime < timeout) {
         try {
@@ -292,7 +284,10 @@ export function useGoatX402(signer: ethers.Signer | null) {
         setPaymentResult(result)
 
         if (result.success) {
-          await pollForConfirmation(newOrder.orderId)
+          // Fire-and-forget: update status when backend confirms, but don't fail UX on timeout
+          pollForConfirmation(newOrder.orderId).catch(() => {
+            // Swallow polling errors; transaction already submitted
+          })
         }
 
         return result
@@ -334,6 +329,98 @@ export function useGoatX402(signer: ethers.Signer | null) {
     [paymentHelper, signer]
   )
 
+  // Pay with an existing order (e.g. from Payride /api/book) — no createOrder call
+  const payWithOrder = useCallback(
+    async (backendOrder: {
+      orderId: string
+      flow: string
+      tokenSymbol: string
+      tokenContract: string
+      fromAddress: string
+      payToAddress: string
+      chainId: number
+      amountWei: string
+      expiresAt: number
+      calldataSignRequest?: Order['calldataSignRequest']
+    }): Promise<PaymentResult | null> => {
+      if (!paymentHelper || !signer) {
+        setError('Wallet not connected')
+        return null
+      }
+
+      setLoading(true)
+      setError(null)
+      setPaymentResult(null)
+      setOrderStatus(null)
+
+      try {
+        const fromAddress = await signer.getAddress()
+        const newOrder: Order = {
+          orderId: backendOrder.orderId,
+          flow: backendOrder.flow as Order['flow'],
+          tokenSymbol: backendOrder.tokenSymbol,
+          tokenContract: backendOrder.tokenContract,
+          fromAddress: backendOrder.fromAddress,
+          payToAddress: backendOrder.payToAddress,
+          chainId: backendOrder.chainId,
+          amountWei: backendOrder.amountWei,
+          expiresAt: backendOrder.expiresAt,
+          calldataSignRequest: backendOrder.calldataSignRequest,
+        }
+
+        setOrder(newOrder)
+
+        let needsNetworkSwitch = false
+        const sourceChainId = newOrder.chainId
+
+        if (newOrder.calldataSignRequest) {
+          const calldataDomainChainId = newOrder.calldataSignRequest.domain.chainId
+          if (calldataDomainChainId !== sourceChainId) {
+            needsNetworkSwitch = true
+            await switchChain(calldataDomainChainId)
+            const targetSigner = await getFreshSigner()
+            const targetSignerAddress = await targetSigner.getAddress()
+            if (targetSignerAddress.toLowerCase() !== fromAddress.toLowerCase()) {
+              throw new Error('Account mismatch after network switch')
+            }
+            const targetPaymentHelper = new PaymentHelper(targetSigner)
+            const signature = await targetPaymentHelper.signCalldata(newOrder)
+            await submitSignature(newOrder.orderId, signature)
+            await switchChain(sourceChainId)
+          } else {
+            const signature = await paymentHelper.signCalldata(newOrder)
+            await submitSignature(newOrder.orderId, signature)
+          }
+        }
+
+        let activePaymentHelper = paymentHelper
+        if (needsNetworkSwitch) {
+          const freshSigner = await getFreshSigner()
+          activePaymentHelper = new PaymentHelper(freshSigner)
+        }
+
+        const result = await activePaymentHelper.pay(newOrder)
+        setPaymentResult(result)
+
+        if (result.success) {
+          // Fire-and-forget confirmation polling
+          pollForConfirmation(newOrder.orderId).catch(() => {
+            // Ignore polling errors/timeouts
+          })
+        }
+
+        return result
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Payment failed'
+        setError(message)
+        return { success: false, error: message }
+      } finally {
+        setLoading(false)
+      }
+    },
+    [paymentHelper, signer, submitSignature, pollForConfirmation]
+  )
+
   // Reset state
   const reset = useCallback(() => {
     setOrder(null)
@@ -349,6 +436,7 @@ export function useGoatX402(signer: ethers.Signer | null) {
     paymentResult,
     orderStatus,
     pay,
+    payWithOrder,
     getBalance,
     reset,
   }

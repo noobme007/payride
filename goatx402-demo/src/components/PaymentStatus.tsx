@@ -1,11 +1,10 @@
 /**
- * Payment Status Component
+ * PaymentStatus — shows live order status with animated confirmation banner
  */
 
 import type { Order, PaymentResult } from 'goatx402-sdk'
 import { config } from '../config'
 
-// Order proof from backend API
 interface OrderProof {
   orderId: string
   merchantId: string
@@ -28,159 +27,134 @@ interface PaymentStatusProps {
   onReset: () => void
 }
 
-export function PaymentStatus({
-  order,
-  result,
-  status,
-  error,
-  onReset,
-}: PaymentStatusProps) {
-  if (!order && !result && !error) {
-    return null
-  }
+function badgeClass(s: string) {
+  if (['PAYMENT_CONFIRMED', 'INVOICED'].includes(s)) return 'confirmed'
+  if (['PAYMENT_FAILED', 'EXPIRED'].includes(s)) return 'failed'
+  if (['PAYMENT_DETECTING', 'PAYMENT_CONFIRMING'].includes(s)) return 'pending'
+  return 'default'
+}
 
-  const getStatusColor = (s: string) => {
-    switch (s) {
-      case 'PAYMENT_CONFIRMED':
-        return 'bg-green-100 text-green-800'
-      case 'PAYMENT_FAILED':
-      case 'EXPIRED':
-        return 'bg-red-100 text-red-800'
-      case 'PAYMENT_DETECTING':
-      case 'PAYMENT_CONFIRMING':
-        return 'bg-yellow-100 text-yellow-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
+export function PaymentStatus({ order, result, status, error, onReset }: PaymentStatusProps) {
+  if (!order && !result && !error) return null
 
-  const getExplorerUrl = (chainId: number, txHash: string) => {
+  const explorerUrl = (chainId: number, tx: string) => {
     const chain = config.chains?.[chainId]
-    if (chain?.explorerUrl) {
-      return `${chain.explorerUrl}/tx/${txHash}`
-    }
-    return null
+    return chain?.explorerUrl ? `${chain.explorerUrl}/tx/${tx}` : null
   }
+
+  const isConfirmed = status && ['PAYMENT_CONFIRMED', 'INVOICED'].includes(status.status)
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-800">Payment Status</h2>
-        <button
-          onClick={onReset}
-          className="text-sm text-blue-600 hover:text-blue-800"
-        >
-          New Payment
-        </button>
+    <div className="payment-card">
+      <div className="payment-header">
+        <h2 className="payment-title">💳 Payment Status</h2>
+        <button className="btn-new-payment" onClick={onReset}>New Payment</button>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <p className="text-red-700">{error}</p>
+      {/* Confirmation banner */}
+      {isConfirmed && (
+        <div className="pay-confirm-banner">
+          <div className="pay-confirm-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <p className="pay-confirm-text">Booking Confirmed!</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.1rem' }}>
+              Your payment was processed on-chain.
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Order Info */}
+      {/* Error */}
+      {error && !status && (
+        <div className="error-banner">⚠️ {error}</div>
+      )}
+
+      {/* Order details */}
       {order && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Order ID</span>
-              <p className="font-mono text-xs break-all">{order.orderId}</p>
+        <div>
+          <div className="pay-grid">
+            <div className="pay-field">
+              <label>Order ID</label>
+              <p style={{ fontSize: '0.72rem' }}>{order.orderId}</p>
             </div>
-            <div>
-              <span className="text-gray-500">Flow</span>
-              <p className="font-medium">{order.flow}</p>
+            <div className="pay-field">
+              <label>Flow</label>
+              <p>{order.flow}</p>
             </div>
-            <div>
-              <span className="text-gray-500">Amount</span>
-              <p className="font-medium">
+            <div className="pay-field">
+              <label>Amount</label>
+              <p style={{ fontFamily: 'inherit', color: 'var(--emerald)', fontWeight: 600 }}>
                 {(Number(order.amountWei) / 1e6).toFixed(2)} {order.tokenSymbol}
               </p>
             </div>
-            <div>
-              <span className="text-gray-500">Recipient</span>
-              <p className="font-mono text-xs truncate" title={order.payToAddress}>
-                {order.payToAddress.slice(0, 10)}...{order.payToAddress.slice(-8)}
-              </p>
+            <div className="pay-field">
+              <label>Recipient</label>
+              <p style={{ fontSize: '0.72rem' }}>{order.payToAddress.slice(0, 10)}…{order.payToAddress.slice(-8)}</p>
             </div>
           </div>
 
-          {/* Transaction Result */}
+          {/* Tx result */}
           {result && (
-            <div className="border-t pt-3 mt-3">
+            <div className={`pay-result ${result.success ? 'success' : 'fail'}`}>
               {result.success ? (
-                <div className="flex items-center gap-2 text-green-700">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Transaction submitted</span>
-                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               ) : (
-                <div className="flex items-center gap-2 text-red-700">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span>Transaction failed</span>
-                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               )}
-
+              <span>{result.success ? 'Transaction submitted' : 'Transaction failed'}</span>
               {result.txHash && (
-                <div className="mt-2">
-                  <span className="text-gray-500 text-sm">Transaction Hash</span>
-                  <p className="font-mono text-xs break-all">
-                    {getExplorerUrl(order.chainId, result.txHash) ? (
-                      <a
-                        href={getExplorerUrl(order.chainId, result.txHash)!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {result.txHash}
-                      </a>
-                    ) : (
-                      result.txHash
-                    )}
-                  </p>
-                </div>
+                <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>
+                  {explorerUrl(order.chainId, result.txHash) ? (
+                    <a
+                      href={explorerUrl(order.chainId, result.txHash)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="tx-link"
+                    >
+                      View tx ↗
+                    </a>
+                  ) : (
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: 'var(--muted)' }}>
+                      {result.txHash.slice(0, 12)}…
+                    </span>
+                  )}
+                </span>
               )}
             </div>
           )}
 
-          {/* Order Status */}
+          {/* Order status */}
           {status && (
-            <div className="border-t pt-3 mt-3">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 text-sm">Status:</span>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(status.status)}`}>
-                  {status.status}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem', marginTop: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Status:</span>
+                <span className={`pay-status-badge ${badgeClass(status.status)}`}>
+                  {status.status.replace(/_/g, ' ')}
                 </span>
               </div>
-
-              {status.txHash && (
-                <div className="mt-2">
-                  <span className="text-gray-500 text-sm">Confirmed TX</span>
-                  <p className="font-mono text-xs break-all">
-                    {getExplorerUrl(status.chainId, status.txHash) ? (
-                      <a
-                        href={getExplorerUrl(status.chainId, status.txHash)!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {status.txHash}
-                      </a>
-                    ) : (
-                      status.txHash
-                    )}
-                  </p>
-                </div>
-              )}
-
               {status.confirmedAt && (
-                <p className="text-sm text-gray-500 mt-2">
+                <p style={{ fontSize: '0.73rem', color: 'var(--muted)', marginTop: '0.4rem' }}>
                   Confirmed at: {new Date(status.confirmedAt).toLocaleString()}
+                </p>
+              )}
+              {status.txHash && (
+                <p style={{ fontSize: '0.73rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+                  On-chain TX:{' '}
+                  {explorerUrl(status.chainId, status.txHash) ? (
+                    <a href={explorerUrl(status.chainId, status.txHash)!} target="_blank" rel="noopener noreferrer" className="tx-link">
+                      {status.txHash.slice(0, 12)}… ↗
+                    </a>
+                  ) : (
+                    <span style={{ fontFamily: 'monospace' }}>{status.txHash.slice(0, 12)}…</span>
+                  )}
                 </p>
               )}
             </div>
