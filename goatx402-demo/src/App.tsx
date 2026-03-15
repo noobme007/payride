@@ -201,7 +201,10 @@ function App() {
     <div className="dashboard">
       {/* ── TOP BAR ─────────────────────────────────────────── */}
       <header className="topbar">
-        <div className="topbar-logo">✈️ PAYRIDE</div>
+        <div className="topbar-logo">
+          <span style={{ fontSize: '1.8rem', animation: 'float 3s ease-in-out infinite', display: 'inline-block' }}>✈️</span>
+          <span>PAYRIDE</span>
+        </div>
 
         <div className="topbar-modes">
           <button
@@ -220,14 +223,14 @@ function App() {
 
         <div className="topbar-wallet">
           {wallet.isConnected && wallet.address ? (
-            <div className="wallet-pill connected">
+            <div className="wallet-pill connected animate-pop">
               <span className="wallet-dot" />
               {fmtAddr(wallet.address)}
               <button className="wallet-disc" onClick={wallet.disconnect}>×</button>
             </div>
           ) : (
             <button
-              className="wallet-pill disconnected"
+              className="wallet-pill disconnected animate-pop"
               onClick={wallet.connect}
               disabled={wallet.loading}
             >

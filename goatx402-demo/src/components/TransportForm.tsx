@@ -120,11 +120,11 @@ export function TransportForm({ onSearch, searching, isConnected }: Props) {
         ))}
       </div>
 
-      <div className="form-step-label">{STEP_LABELS[step]}</div>
+      <div className="form-step-label animate-slide-up" key={step}>{STEP_LABELS[step]}</div>
 
       {/* TYPE */}
       {step === 'type' && (
-        <div className="chip-wrap">
+        <div className="chip-wrap animate-pop">
           {TRANSPORT_TYPES.map(t => (
             <button key={t.label} className="chip-flat chip-transport"
               onClick={() => advance({ tripType: t.val }, 'route')}>
@@ -136,7 +136,7 @@ export function TransportForm({ onSearch, searching, isConnected }: Props) {
 
       {/* ROUTE */}
       {step === 'route' && (
-        <div className="route-panel">
+        <div className="route-panel animate-pop">
           {/* FROM */}
           <div className="route-field">
             <label className="route-label">FROM</label>
@@ -203,7 +203,7 @@ export function TransportForm({ onSearch, searching, isConnected }: Props) {
 
       {/* DATE */}
       {step === 'date' && (
-        <div>
+        <div className="animate-pop">
           <CalendarPicker
             mode="single"
             startDate={calDate}
@@ -221,7 +221,7 @@ export function TransportForm({ onSearch, searching, isConnected }: Props) {
 
       {/* PASSENGERS */}
       {step === 'passengers' && (
-        <div className="chip-wrap">
+        <div className="chip-wrap animate-pop">
           {PAX.map(n => (
             <button key={n} className="chip-flat"
               onClick={() => advance({ passengers: n === '5+' ? 5 : parseInt(n) }, 'class')}>
@@ -233,7 +233,7 @@ export function TransportForm({ onSearch, searching, isConnected }: Props) {
 
       {/* CLASS */}
       {step === 'class' && (
-        <div className="chip-wrap">
+        <div className="chip-wrap animate-pop">
           {CLASSES.map(c => (
             <button key={c.val} className="chip-flat"
               onClick={() => advance({ travelClass: c.val }, 'time')}>
@@ -245,7 +245,7 @@ export function TransportForm({ onSearch, searching, isConnected }: Props) {
 
       {/* TIME */}
       {step === 'time' && (
-        <div className="chip-wrap">
+        <div className="chip-wrap animate-pop">
           {TIMES.map(t => (
             <button key={t.val} className="chip-flat"
               onClick={() => doSearch(t.val)}>

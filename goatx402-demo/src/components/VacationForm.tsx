@@ -106,11 +106,11 @@ export function VacationForm({ onSearch, searching, isConnected }: Props) {
         ))}
       </div>
 
-      <div className="form-step-label">{STEP_LABELS[step]}</div>
+      <div className="form-step-label animate-slide-up" key={step}>{STEP_LABELS[step]}</div>
 
       {/* STYLE */}
       {step === 'style' && (
-        <div className="chips-2col">
+        <div className="chips-2col animate-pop">
           {STYLES.map(s => (
             <button key={s.val} className="chip-flat"
               onClick={() => advance({ tripType: 'hotel' }, 'destination')}>
@@ -122,7 +122,7 @@ export function VacationForm({ onSearch, searching, isConnected }: Props) {
 
       {/* DESTINATION */}
       {step === 'destination' && (
-        <div className="chip-wrap">
+        <div className="chip-wrap animate-pop">
           {DESTINATIONS.map(d => (
             <button key={d} className="chip-flat"
               onClick={() => advance({ destination: d }, 'dates')}>
@@ -157,7 +157,7 @@ export function VacationForm({ onSearch, searching, isConnected }: Props) {
 
       {/* DATES */}
       {step === 'dates' && (
-        <div>
+        <div className="animate-pop">
           <CalendarPicker
             mode="range"
             startDate={calStart}
@@ -174,7 +174,7 @@ export function VacationForm({ onSearch, searching, isConnected }: Props) {
 
       {/* GROUP */}
       {step === 'group' && (
-        <div className="chip-wrap">
+        <div className="chip-wrap animate-pop">
           {GROUPS.map(g => (
             <button key={g.val} className="chip-flat"
               onClick={() => advance({ passengers: parseInt(g.val) }, 'budget')}>
@@ -186,7 +186,7 @@ export function VacationForm({ onSearch, searching, isConnected }: Props) {
 
       {/* BUDGET */}
       {step === 'budget' && (
-        <div className="chip-wrap">
+        <div className="chip-wrap animate-pop">
           {BUDGETS.map(b => (
             <button key={b.val} className="chip-flat"
               onClick={() => advance({ budget: b.val }, 'hotel')}>
@@ -198,7 +198,7 @@ export function VacationForm({ onSearch, searching, isConnected }: Props) {
 
       {/* HOTEL STARS */}
       {step === 'hotel' && (
-        <div className="chip-wrap">
+        <div className="chip-wrap animate-pop">
           {HOTEL_STARS.map(h => (
             <button key={h.val} className="chip-flat"
               onClick={() => doSearch(h.val)}>
