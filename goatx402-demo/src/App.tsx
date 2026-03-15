@@ -280,7 +280,7 @@ function App() {
             mode={mode}
             onBook={bookOption}
             onAgentBook={agentBook}
-            error={goatx402.error}
+            error={searchError || goatx402.error}
           />
         </section>
       </main>
