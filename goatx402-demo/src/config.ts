@@ -6,8 +6,8 @@
  */
 
 export const config = {
-  // Backend API URL (proxied via Vite in development)
-  apiUrl: '/api',
+  // Backend API URL
+  apiUrl: import.meta.env.VITE_API_URL || '/api',
 
   // Chain explorer URLs
   chains: {

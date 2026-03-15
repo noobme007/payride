@@ -14,7 +14,6 @@ import { BookingOverlay } from './components/BookingOverlay'
 import { BottomBar } from './components/BottomBar'
 import type { TravelOption, BookResponse, PaymentRecord } from './types/travel'
 import type { TripType, TripMode } from './types/travel'
-import { config } from './config'
 
 const GOAT_CHAIN_ID = 48816
 
@@ -73,7 +72,8 @@ function App() {
     setSearching(true)
     setAgentStatus('Searching…')
     try {
-      const res = await fetch('/api/search', {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${apiUrl}/api/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -110,7 +110,8 @@ function App() {
     if (!wallet.isConnected || !wallet.address) return
     setAgentStatus('Booking…')
     try {
-      const res = await fetch('/api/book', {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${apiUrl}/api/book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -165,7 +166,8 @@ function App() {
     setAgentPicking(true)
     setAgentStatus('Agent choosing…')
     try {
-      const res = await fetch('/api/agent', {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const res = await fetch(`${apiUrl}/api/agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userRequest, options }),
